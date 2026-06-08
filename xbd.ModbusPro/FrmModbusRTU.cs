@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
@@ -32,6 +33,10 @@ namespace xbd.ModbusPro
         private byte slaveId = 1;
         private ushort start = 0;
         private ushort count = 1;
+        private DataType dataType;
+        private StoreArea storeArea;
+        private DataFormat dataFormat;
+        private OperateResult<bool[]> rcResult;
 
         private bool IsConnected=false;
 
@@ -71,6 +76,9 @@ namespace xbd.ModbusPro
             //初始化存储区
             this.cmb_StoreArea.Items.AddRange(Enum.GetNames(typeof(StoreArea)));
             this.cmb_StoreArea.SelectedIndex = 0;
+            //初始化数据类型
+            this.cmb_DataType.Items.AddRange(Enum.GetNames(typeof (DataType)));
+            this.cmb_DataType.SelectedIndex = 0;
 
             //初始化TextBox
             this.txt_SlaveId.Text = slaveId.ToString();
@@ -119,6 +127,91 @@ namespace xbd.ModbusPro
             listViewItem.SubItems.Add(log);
             //往前插入
             this.lst_Info.Items.Insert(0,listViewItem);
+        }
+
+        private void btn_Read_Click(object sender, EventArgs e)
+        {
+            if (CommonVerify())
+            {
+                switch (dataType)   
+                {
+                    case DataType.Bool:
+                        ReadBool(storeArea,slaveId,start,count);
+                        break;
+                    case DataType.Short:
+                        break;
+                    case DataType.UShort:
+                        break;
+                    case DataType.Int:
+                        break;
+                    case DataType.UInt:
+                        break;
+                    case DataType.Float:
+                        break;
+                    default:
+                        AddLog(1, "读取失败，暂时不支持该类型");
+                        break;
+                }
+
+            }
+        }
+
+        private void ReadBool(StoreArea storeArea,byte slaveId,ushort start,ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输出线圈0x:
+                    rcResult = modbus.ReadCoils(start,count,slaveId);
+                    break;
+                case StoreArea.输入线圈1x:
+                    rcResult = modbus.ReadInputs(start,count,slaveId);
+                    break;
+                default:
+                    rcResult = OperateResult.CreateFailResult<bool[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rcResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(rcResult.Content));
+            }
+            else
+            {
+                AddLog(1, "读取失败："+rcResult.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// 通用验证方法
+        /// </summary>
+        /// <returns></returns>
+        private bool CommonVerify()
+        {
+            if (!IsConnected)
+            {
+                AddLog(1, "请检查是否打开串口");
+                return false;
+            }
+            if(!byte.TryParse(this.txt_SlaveId.Text,out slaveId))
+            {
+                AddLog(1, "请检查站地址是否为有效的字节类型");
+                return false;
+            }
+            if (!ushort.TryParse(this.txt_Start.Text, out start))
+            {
+                AddLog(1, "请检查起始地址是否为有效的无符号整型");
+                return false;
+            }
+            if (!ushort.TryParse(this.txt_Count.Text, out count))
+            {
+                AddLog(1, "请检查读取数量是否为有效的无符号整型");
+                return false;
+            }
+            dataType=(DataType)Enum.Parse(typeof(DataType),this.cmb_DataType.Text,true);
+            storeArea=(StoreArea)Enum.Parse(typeof(StoreArea),this.cmb_StoreArea.Text,true);
+            dataFormat=(DataFormat)Enum.Parse(typeof(DataFormat),this.cmb_DataFormat.Text,true);
+
+            return true;
         }
     }
 }
