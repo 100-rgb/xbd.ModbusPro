@@ -37,6 +37,7 @@ namespace xbd.ModbusPro
         private StoreArea storeArea;
         private DataFormat dataFormat;
         private OperateResult<bool[]> rcResult;
+        private OperateResult<byte[]> rrResult;
 
         private bool IsConnected=false;
 
@@ -72,7 +73,7 @@ namespace xbd.ModbusPro
             this.cmb_StopBits.SelectedIndex = 1;
             //初始化大小端
             this.cmb_DataFormat.Items.AddRange(Enum.GetNames(typeof(DataFormat)));
-            this.cmb_DataFormat.SelectedIndex = 1;
+            this.cmb_DataFormat.SelectedIndex = 0;
             //初始化存储区
             this.cmb_StoreArea.Items.AddRange(Enum.GetNames(typeof(StoreArea)));
             this.cmb_StoreArea.SelectedIndex = 0;
@@ -139,14 +140,19 @@ namespace xbd.ModbusPro
                         ReadBool(storeArea,slaveId,start,count);
                         break;
                     case DataType.Short:
+                        ReadShort(storeArea, slaveId,start,count);
                         break;
                     case DataType.UShort:
+                        ReadUShort(storeArea,slaveId,start,count);
                         break;
                     case DataType.Int:
+                        ReadInt(storeArea,slaveId,start,count);
                         break;
                     case DataType.UInt:
+                        ReadUInt(storeArea,slaveId,start,count);
                         break;
                     case DataType.Float:
+                        ReadFloat(storeArea,slaveId,start,count);
                         break;
                     default:
                         AddLog(1, "读取失败，暂时不支持该类型");
@@ -156,6 +162,13 @@ namespace xbd.ModbusPro
             }
         }
 
+        /// <summary>
+        /// 读取Bool值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
         private void ReadBool(StoreArea storeArea,byte slaveId,ushort start,ushort count)
         {
             switch (storeArea)
@@ -179,7 +192,156 @@ namespace xbd.ModbusPro
                 AddLog(1, "读取失败："+rcResult.Message);
             }
         }
-
+        /// <summary>
+        /// 读取Short值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        private void ReadShort(StoreArea storeArea,byte slaveId,ushort start,ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输入寄存器3x:
+                    rrResult = modbus.ReadInputsRegisters(start, count, slaveId);
+                    break;
+                case StoreArea.保持寄存器4x:
+                    rrResult = modbus.ReadHoldingRegisters(start, count, slaveId);
+                    break;
+                default:
+                    rrResult = OperateResult.CreateFailResult<byte[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rrResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(ShortLib.GetShortArrayFromByteArray(rrResult.Content,this.dataFormat)));
+            }
+            else
+            {
+                AddLog(1, "读取失败：" + rrResult.Message);
+            }
+        }
+        /// <summary>
+        /// 读取UShort值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        private void ReadUShort(StoreArea storeArea, byte slaveId, ushort start, ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输入寄存器3x:
+                    rrResult = modbus.ReadInputsRegisters(start, count, slaveId);
+                    break;
+                case StoreArea.保持寄存器4x:
+                    rrResult = modbus.ReadHoldingRegisters(start, count, slaveId);
+                    break;
+                default:
+                    rrResult = OperateResult.CreateFailResult<byte[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rrResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(UShortLib.GetUShortArrayFromByteArray(rrResult.Content,this.dataFormat)));
+            }
+            else
+            {
+                AddLog(1, "读取失败：" + rrResult.Message);
+            }
+        }
+        /// <summary>
+        /// 读取Int值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        private void ReadInt(StoreArea storeArea, byte slaveId, ushort start, ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输入寄存器3x:
+                    rrResult = modbus.ReadInputsRegisters(start, (ushort)(count*2), slaveId);
+                    break;
+                case StoreArea.保持寄存器4x:
+                    rrResult = modbus.ReadHoldingRegisters(start, (ushort)(count * 2), slaveId);
+                    break;
+                default:
+                    rrResult = OperateResult.CreateFailResult<byte[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rrResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(IntLib.GetIntArrayFromByteArray(rrResult.Content, this.dataFormat)));
+            }
+            else
+            {
+                AddLog(1, "读取失败：" + rrResult.Message);
+            }
+        }
+        /// <summary>
+        /// 读取UInt值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        private void ReadUInt(StoreArea storeArea, byte slaveId, ushort start, ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输入寄存器3x:
+                    rrResult = modbus.ReadInputsRegisters(start, (ushort)(count * 2), slaveId);
+                    break;
+                case StoreArea.保持寄存器4x:
+                    rrResult = modbus.ReadHoldingRegisters(start, (ushort)(count * 2), slaveId);
+                    break;
+                default:
+                    rrResult = OperateResult.CreateFailResult<byte[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rrResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(UIntLib.GetUIntArrayFromByteArray(rrResult.Content, this.dataFormat)));
+            }
+            else
+            {
+                AddLog(1, "读取失败：" + rrResult.Message);
+            }
+        }
+        /// <summary>
+        /// 读取Float值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        private void ReadFloat(StoreArea storeArea, byte slaveId, ushort start, ushort count)
+        {
+            switch (storeArea)
+            {
+                case StoreArea.输入寄存器3x:
+                    rrResult = modbus.ReadInputsRegisters(start, (ushort)(count * 2), slaveId);
+                    break;
+                case StoreArea.保持寄存器4x:
+                    rrResult = modbus.ReadHoldingRegisters(start, (ushort)(count * 2), slaveId);
+                    break;
+                default:
+                    rrResult = OperateResult.CreateFailResult<byte[]>("暂时不支持该存储区");
+                    break;
+            }
+            if (rrResult.IsSuccess)
+            {
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(FloatLib.GetFloatArrayFromByteArray(rrResult.Content, this.dataFormat)));
+            }
+            else
+            {
+                AddLog(1, "读取失败：" + rrResult.Message);
+            }
+        }
 
         /// <summary>
         /// 通用验证方法
