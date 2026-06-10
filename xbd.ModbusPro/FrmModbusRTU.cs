@@ -1,13 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO.Ports;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using xbd.DataConvertLib;
 using xbd.ModbusLib;
@@ -38,8 +30,9 @@ namespace xbd.ModbusPro
         private DataFormat dataFormat;
         private OperateResult<bool[]> rcResult;
         private OperateResult<byte[]> rrResult;
+        private OperateResult wResult;
 
-        private bool IsConnected=false;
+        private bool IsConnected = false;
 
         //通信对象
         private ModbusRTU modbus = new ModbusRTU();
@@ -51,7 +44,7 @@ namespace xbd.ModbusPro
 
             //初始化端口号
             string[] portList = SerialPort.GetPortNames();
-            if (portList.Length>0)
+            if (portList.Length > 0)
             {
                 this.cmb_PortName.Items.AddRange(portList);
                 this.cmb_PortName.SelectedIndex = 0;
@@ -66,7 +59,7 @@ namespace xbd.ModbusPro
             this.cmb_Parity.Items.AddRange(Enum.GetNames(typeof(Parity)));
             this.cmb_Parity.SelectedIndex = 0;
             //初始化数据位
-            this.cmb_DataBits.Items.AddRange(new string[]{"7","8"});
+            this.cmb_DataBits.Items.AddRange(new string[] { "7", "8" });
             this.cmb_DataBits.SelectedIndex = 1;
             //初始化停止位
             this.cmb_StopBits.Items.AddRange(Enum.GetNames(typeof(StopBits)));
@@ -78,7 +71,7 @@ namespace xbd.ModbusPro
             this.cmb_StoreArea.Items.AddRange(Enum.GetNames(typeof(StoreArea)));
             this.cmb_StoreArea.SelectedIndex = 0;
             //初始化数据类型
-            this.cmb_DataType.Items.AddRange(Enum.GetNames(typeof (DataType)));
+            this.cmb_DataType.Items.AddRange(Enum.GetNames(typeof(DataType)));
             this.cmb_DataType.SelectedIndex = 0;
 
             //初始化TextBox
@@ -96,18 +89,18 @@ namespace xbd.ModbusPro
             }
 
             Parity parity = (Parity)Enum.Parse(typeof(Parity), this.cmb_Parity.Text);
-            StopBits stopBits = (StopBits)Enum.Parse(typeof(StopBits),this.cmb_StopBits.Text);
+            StopBits stopBits = (StopBits)Enum.Parse(typeof(StopBits), this.cmb_StopBits.Text);
 
-            var result =  modbus.Open(this.cmb_PortName.Text, Convert.ToInt32(this.cmb_BaudRate.Text),parity,Convert.ToInt32(this.cmb_DataBits.Text),stopBits);
+            var result = modbus.Open(this.cmb_PortName.Text, Convert.ToInt32(this.cmb_BaudRate.Text), parity, Convert.ToInt32(this.cmb_DataBits.Text), stopBits);
             if (result.IsSuccess)
             {
-                AddLog(0,"串口打开成功");
+                AddLog(0, "串口打开成功");
                 IsConnected = true;
             }
             else
             {
-                AddLog(2, "串口打开失败"+result.Message);
-                IsConnected= false;
+                AddLog(2, "串口打开失败" + result.Message);
+                IsConnected = false;
             }
         }
 
@@ -122,40 +115,78 @@ namespace xbd.ModbusPro
         /// </summary>
         /// <param name="index"></param>
         /// <param name="log"></param>
-        private void AddLog(int index,string log)
+        private void AddLog(int index, string log)
         {
-            ListViewItem listViewItem = new ListViewItem("   "+DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            ListViewItem listViewItem = new ListViewItem("   " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
             listViewItem.SubItems.Add(log);
             //往前插入
-            this.lst_Info.Items.Insert(0,listViewItem);
+            this.lst_Info.Items.Insert(0, listViewItem);
         }
 
         private void btn_Read_Click(object sender, EventArgs e)
         {
             if (CommonVerify())
             {
-                switch (dataType)   
+                switch (dataType)
                 {
                     case DataType.Bool:
-                        ReadBool(storeArea,slaveId,start,count);
+                        ReadBool(storeArea, slaveId, start, count);
                         break;
                     case DataType.Short:
-                        ReadShort(storeArea, slaveId,start,count);
+                        ReadShort(storeArea, slaveId, start, count);
                         break;
                     case DataType.UShort:
-                        ReadUShort(storeArea,slaveId,start,count);
+                        ReadUShort(storeArea, slaveId, start, count);
                         break;
                     case DataType.Int:
-                        ReadInt(storeArea,slaveId,start,count);
+                        ReadInt(storeArea, slaveId, start, count);
                         break;
                     case DataType.UInt:
-                        ReadUInt(storeArea,slaveId,start,count);
+                        ReadUInt(storeArea, slaveId, start, count);
                         break;
                     case DataType.Float:
-                        ReadFloat(storeArea,slaveId,start,count);
+                        ReadFloat(storeArea, slaveId, start, count);
                         break;
                     default:
                         AddLog(1, "读取失败，暂时不支持该类型");
+                        break;
+                }
+
+            }
+        }
+
+        private void btn_Write_Click(object sender, EventArgs e)
+        {
+            if (CommonVerify())
+            {
+                string writeValue = this.txt_Write.Text.Trim();
+
+                if (writeValue.Length == 0)
+                {
+                    AddLog(1, "写入失败：写入值不能为空");
+                }
+                switch (dataType)
+                {
+                    case DataType.Bool:
+                        WriteBool(storeArea, slaveId, start, writeValue);
+                        break;
+                    case DataType.Short:
+                        WriteShort(storeArea, slaveId, start, writeValue);
+                        break;
+                    case DataType.UShort:
+                        WriteUShort(storeArea, slaveId, start, writeValue);
+                        break;
+                    case DataType.Int:
+                        WriteInt(storeArea, slaveId, start, writeValue);
+                        break;
+                    case DataType.UInt:
+                        WriteUInt(storeArea, slaveId, start, writeValue);
+                        break;
+                    case DataType.Float:
+                        WriteFloat(storeArea, slaveId, start, writeValue);
+                        break;
+                    default:
+                        AddLog(1, "写入失败：暂不支持该数据类型");
                         break;
                 }
 
@@ -169,15 +200,15 @@ namespace xbd.ModbusPro
         /// <param name="slaveId"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
-        private void ReadBool(StoreArea storeArea,byte slaveId,ushort start,ushort count)
+        private void ReadBool(StoreArea storeArea, byte slaveId, ushort start, ushort count)
         {
             switch (storeArea)
             {
                 case StoreArea.输出线圈0x:
-                    rcResult = modbus.ReadCoils(start,count,slaveId);
+                    rcResult = modbus.ReadCoils(start, count, slaveId);
                     break;
                 case StoreArea.输入线圈1x:
-                    rcResult = modbus.ReadInputs(start,count,slaveId);
+                    rcResult = modbus.ReadInputs(start, count, slaveId);
                     break;
                 default:
                     rcResult = OperateResult.CreateFailResult<bool[]>("暂时不支持该存储区");
@@ -189,7 +220,7 @@ namespace xbd.ModbusPro
             }
             else
             {
-                AddLog(1, "读取失败："+rcResult.Message);
+                AddLog(1, "读取失败：" + rcResult.Message);
             }
         }
         /// <summary>
@@ -199,7 +230,7 @@ namespace xbd.ModbusPro
         /// <param name="slaveId"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
-        private void ReadShort(StoreArea storeArea,byte slaveId,ushort start,ushort count)
+        private void ReadShort(StoreArea storeArea, byte slaveId, ushort start, ushort count)
         {
             switch (storeArea)
             {
@@ -215,7 +246,7 @@ namespace xbd.ModbusPro
             }
             if (rrResult.IsSuccess)
             {
-                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(ShortLib.GetShortArrayFromByteArray(rrResult.Content,this.dataFormat)));
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(ShortLib.GetShortArrayFromByteArray(rrResult.Content, this.dataFormat)));
             }
             else
             {
@@ -245,7 +276,7 @@ namespace xbd.ModbusPro
             }
             if (rrResult.IsSuccess)
             {
-                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(UShortLib.GetUShortArrayFromByteArray(rrResult.Content,this.dataFormat)));
+                AddLog(0, "读取成功：" + StringLib.GetStringFromValueArray(UShortLib.GetUShortArrayFromByteArray(rrResult.Content, this.dataFormat)));
             }
             else
             {
@@ -264,7 +295,7 @@ namespace xbd.ModbusPro
             switch (storeArea)
             {
                 case StoreArea.输入寄存器3x:
-                    rrResult = modbus.ReadInputsRegisters(start, (ushort)(count*2), slaveId);
+                    rrResult = modbus.ReadInputsRegisters(start, (ushort)(count * 2), slaveId);
                     break;
                 case StoreArea.保持寄存器4x:
                     rrResult = modbus.ReadHoldingRegisters(start, (ushort)(count * 2), slaveId);
@@ -342,6 +373,220 @@ namespace xbd.ModbusPro
                 AddLog(1, "读取失败：" + rrResult.Message);
             }
         }
+        /// <summary>
+        /// 写入Bool值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteBool(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            bool[] values = BitLib.GetBitArrayFromBitArrayString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.输出线圈0x:
+                    //单个线圈写入
+                    if (values.Length == 1)
+                    {
+                        wResult = this.modbus.WriteSingleCoil(start, values[0], slaveId);
+                    }
+                    //多个线圈写入
+                    else
+                    {
+                        wResult = this.modbus.WriteMultipleCoils(start, values, slaveId);
+                    }
+                    break;
+                case StoreArea.保持寄存器4x:
+                    //写入寄存器中的某一位
+                    if (values.Length == 1)
+                    {
+                        wResult = this.modbus.WriteRegisterBit(start + "." + count, values[0], this.dataFormat == DataFormat.ABCD
+                            || this.dataFormat == DataFormat.CDAB, slaveId);
+                        //ABCD和CDAB属于小端
+                    }
+                    else
+                    {
+                        wResult = OperateResult.CreateFailResult("寄存器位写入只支持单个写入");
+                    }
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+        /// <summary>
+        /// 写入Short值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteShort(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            short[] values = ShortLib.GetShortArrayFromString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.保持寄存器4x:
+                    //写入单寄存器
+                    if (values.Length == 1)
+                    {
+                        wResult = this.modbus.WriteSingleRegisters(start, ByteArrayLib.GetByteArrayFromShort(values[0], this.dataFormat), slaveId);
+                    }
+                    //写入多寄存器
+                    else
+                    {
+                        wResult = this.modbus.WriteMultipleRegisters(start, ByteArrayLib.GetByteArrayFromShortArray(values, this.dataFormat), slaveId);
+                    }
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+        /// <summary>
+        /// 写入UShort值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteUShort(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            ushort[] values = UShortLib.GetUShortArrayFromString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.保持寄存器4x:
+                    //写入单寄存器
+                    if (values.Length == 1)
+                    {
+                        wResult = this.modbus.WriteSingleRegisters(start, ByteArrayLib.GetByteArrayFromUShort(values[0], this.dataFormat), slaveId);
+                    }
+                    //写入多寄存器
+                    else
+                    {
+                        wResult = this.modbus.WriteMultipleRegisters(start, ByteArrayLib.GetByteArrayFromUShortArray(values, this.dataFormat), slaveId);
+                    }
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+        /// <summary>
+        /// 写入Int值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteInt(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            int[] values = IntLib.GetIntArrayFromString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.保持寄存器4x:
+                    //写入多寄存器
+                    wResult = this.modbus.WriteMultipleRegisters(start, ByteArrayLib.GetByteArrayFromIntArray(values, this.dataFormat), slaveId);
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+        /// <summary>
+        /// 写入UInt值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteUInt(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            uint[] values = UIntLib.GetUIntArrayFromString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.保持寄存器4x:
+                    //写入多寄存器
+                    wResult = this.modbus.WriteMultipleRegisters(start, ByteArrayLib.GetByteArrayFromUIntArray(values, this.dataFormat), slaveId);
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+        /// <summary>
+        /// 写入Float值
+        /// </summary>
+        /// <param name="storeArea"></param>
+        /// <param name="slaveId"></param>
+        /// <param name="start"></param>
+        /// <param name="writeValue"></param>
+        private void WriteFloat(StoreArea storeArea, byte slaveId, ushort start, string writeValue)
+        {
+            float[] values = FloatLib.GetFloatArrayFromString(writeValue);
+            switch (storeArea)
+            {
+                case StoreArea.保持寄存器4x:
+                    //写入多寄存器
+                    wResult = this.modbus.WriteMultipleRegisters(start, ByteArrayLib.GetByteArrayFromFloatArray(values, this.dataFormat), slaveId);
+                    break;
+                default:
+                    wResult = OperateResult.CreateFailResult("暂不支持该存储区");
+                    break;
+            }
+            if (wResult.IsSuccess)
+            {
+                AddLog(0, "写入成功");
+            }
+            else
+            {
+                AddLog(1, "写入失败");
+            }
+        }
+
+
+
 
         /// <summary>
         /// 通用验证方法
@@ -354,7 +599,7 @@ namespace xbd.ModbusPro
                 AddLog(1, "请检查是否打开串口");
                 return false;
             }
-            if(!byte.TryParse(this.txt_SlaveId.Text,out slaveId))
+            if (!byte.TryParse(this.txt_SlaveId.Text, out slaveId))
             {
                 AddLog(1, "请检查站地址是否为有效的字节类型");
                 return false;
@@ -369,11 +614,13 @@ namespace xbd.ModbusPro
                 AddLog(1, "请检查读取数量是否为有效的无符号整型");
                 return false;
             }
-            dataType=(DataType)Enum.Parse(typeof(DataType),this.cmb_DataType.Text,true);
-            storeArea=(StoreArea)Enum.Parse(typeof(StoreArea),this.cmb_StoreArea.Text,true);
-            dataFormat=(DataFormat)Enum.Parse(typeof(DataFormat),this.cmb_DataFormat.Text,true);
+            dataType = (DataType)Enum.Parse(typeof(DataType), this.cmb_DataType.Text, true);
+            storeArea = (StoreArea)Enum.Parse(typeof(StoreArea), this.cmb_StoreArea.Text, true);
+            dataFormat = (DataFormat)Enum.Parse(typeof(DataFormat), this.cmb_DataFormat.Text, true);
 
             return true;
         }
+
+
     }
 }

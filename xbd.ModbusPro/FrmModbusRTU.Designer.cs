@@ -288,6 +288,7 @@
             this.btn_Write.TabIndex = 2;
             this.btn_Write.Text = "写入数据";
             this.btn_Write.UseVisualStyleBackColor = true;
+            this.btn_Write.Click += new System.EventHandler(this.btn_Write_Click);
             // 
             // btn_Read
             // 
